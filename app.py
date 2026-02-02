@@ -144,10 +144,11 @@ if uploaded_cv and job_description:
             # Display the specific error message to the user
             st.error(answer)
             st.stop()
-            
-    # 3. CACHING STRATEGY: If analysis data exists, use cache instead of re-processing
+
+    # 3. CACHING STRATEGY: Handle repeated clicks on the same file
     elif process and st.session_state.info and st.session_state.cv_text:
-        st.toast("✅ Using cached resume data.")
+        # Message: Informs the user that the analysis is already done/loaded
+        st.toast("ℹ️ Resume already processed! Results are displayed below.")
         
     # 4. READY STATE: Inputs are valid, waiting for user action
     elif not process and not st.session_state.info and not st.session_state.cv_text:
