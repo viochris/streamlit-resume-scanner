@@ -38,8 +38,23 @@ This tool utilizes a **Dual-Engine Analysis** to score your CV against a Job Des
 """)
 
 with st.sidebar:
+    # --- HEADER & BRANDING ---
+    # Adds visual weight to the top of the sidebar
+    st.title("📄 Scanner Pro")
+    st.markdown("**Next-Gen ATS Optimizer**")
+    
+    # Technical Badge (Fills space professionally)
+    st.info(
+        "**Powered by:**\n"
+        "⚡ `TF-IDF Vectorizer` (Scikit-Learn)\n"
+        "🧠 `MiniLM-L6-v2` (SBERT)"
+    )
+
+    st.divider()
+
     # --- HELP & DOCUMENTATION ---
-    # Placed here to keep the UI clean but accessible
+    st.header("ℹ️ Help Center")
+    st.caption("Guide & Documentation")
 
     # 1. User Guide Expander
     with st.expander("📖 How to Use This Tool"):
@@ -84,6 +99,19 @@ with st.sidebar:
         **Q: Is my data safe?**  
         * **A:** Yes. Your resume and the job description are processed in temporary memory and are **not saved** to any database.
         """)
+
+    st.markdown("---") 
+    st.markdown(
+        """
+        <div style="text-align: center; font-size: 0.85rem; color: #888;">
+            © 2026 <b>Silvio Christian, Joe</b><br>
+            Powered by <b>Streamlit</b>, <b>SBERT</b> & <b>Scikit-Learn</b> 🧠<br><br>
+            <a href="https://www.linkedin.com/in/silvio-christian-joe/" target="_blank" style="text-decoration: none; margin-right: 10px;">🔗 LinkedIn</a>
+            <a href="mailto:viochristian12@gmail.com" style="text-decoration: none;">📧 Email</a>
+        </div>
+        """, 
+        unsafe_allow_html=True
+    )
 
 # --- UI LAYOUT CONFIGURATION ---
 # Create a balanced two-column layout to separate inputs side-by-side.
