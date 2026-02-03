@@ -37,6 +37,54 @@ This tool utilizes a **Dual-Engine Analysis** to score your CV against a Job Des
 ---
 """)
 
+with st.sidebar:
+    # --- HELP & DOCUMENTATION ---
+    # Placed here to keep the UI clean but accessible
+
+    # 1. User Guide Expander
+    with st.expander("📖 How to Use This Tool"):
+        st.markdown("""
+        ### ⚡ Quick Start Guide
+        1.  **Upload Resume:** Click **"📂 Upload Resume (PDF)"** on the left panel.
+        2.  **Input Job Description:** Paste the full job posting text into the **"📋 Job Description"** box on the right.
+        3.  **Choose Mode:**
+            * **🤖 Strict Mode:** Select this to check for *exact keyword matches*. Use this to see if you pass the "Robot" filter.
+            * **🧠 Flexible Mode:** Select this to check *contextual relevance*. Use this to see if your experience sounds right to an AI/Human.
+        4.  **Analyze:** Click the **"🔍 Analyze Match"** button.
+
+        ### 🎯 How to Read the Results
+        * **Score:** 0% to 100% match rate. Aim for **>50%** for a decent chance.
+        * **Missing Keywords:** Expands to show words found in the Job Description but *not* in your CV.
+        * **Critical Skills Check:**
+            * The system automatically identifies the **Top 5 Critical Keywords** (based on how often they appear in the Job Ddescription).
+            * **Action:** Ensure your CV contains these specific words to pass the strict ATS filters.
+        """)
+
+    # 2. FAQ Expander
+    with st.expander("❓ Frequently Asked Questions (FAQ)"):
+        st.markdown("""
+        **Q: Which mode should I trust?**  
+        * **A:** Use **Strict Mode** to fix your keywords (ATS optimization), then use **Flexible Mode** to ensure your resume flows well semantically (Human optimization).
+
+        **Q: Why is my Strict Score lower than my Flexible Score?**  
+        * **A:** This is normal! Strict Mode punishes you for using synonyms (e.g., "Coder" vs "Programmer"). Flexible Mode understands they are the same and gives you points for context.
+
+        **Q: Why is my Flexible Score (AI) lower than my Strict Score?**
+        * **A:** This happens because Strict Mode (TF-IDF) counts keywords blindly. For example, if you write *"I do **not** have experience in **Python**"*, Strict Mode still gives you points for the word "**Python**". Flexible Mode (AI) understands the word "**not**" and context, realizing you lack that skill, resulting in a lower (but more accurate) score.
+        
+        **Q: Both modes show different results. How should I interpret this for my application?**
+        * **A:** To maximize your chances, you should optimize for both types of Applicant Tracking Systems (ATS):
+            1.  **Legacy Systems (Strict Mode):** Ensure high keyword density for older systems that rely on exact string matching.
+            2.  **Modern AI Systems (Flexible Mode):** Ensure your resume has strong semantic coherence for newer systems that use vector embeddings.
+            3.  **Mandatory Requirements:** Always verify the **🎯 Critical Skills Check** section below. Even with a high overall score, missing core hard skills (e.g., "SQL" for a Data Analyst role) is typically a primary disqualification factor.
+
+        **Q: How does the "Critical Skills" section work?**  
+        * **A:** The system calculates the "Term Frequency" (TF-IDF) of the Job Description. Words that appear frequently (and are unique to the job) are ranked as "High Priority." You should prioritize adding these to your resume first.
+
+        **Q: Is my data safe?**  
+        * **A:** Yes. Your resume and the job description are processed in temporary memory and are **not saved** to any database.
+        """)
+
 # --- UI LAYOUT CONFIGURATION ---
 # Create a balanced two-column layout to separate inputs side-by-side.
 # This ensures the Resume and Job Description are visible simultaneously.
@@ -152,7 +200,7 @@ if uploaded_cv and job_description:
         
     # 4. READY STATE: Inputs are valid, waiting for user action
     elif not process and not st.session_state.info and not st.session_state.cv_text:
-        st.warning("⚠️ Ready to analyze. Please click the 'Analyze Match' button to start.")  
+        st.warning("⚠️ Ready to analyze. Please click the '🔍 Analyze Match' button to start.")  
 
 # --- USER ONBOARDING & INSTRUCTIONS ---
 # Scenario 1: Initial State (No inputs provided)
@@ -207,34 +255,6 @@ if st.session_state.cv_text and job_description \
             st.success("✅ **ATS Optimized:** High keyword matching detected.")
         else:
             st.error("⚠️ **Optimization Needed:** Low keyword match. Consider adding more terms from the JD.")
-
-        # 5. IDENTIFY MISSING KEYWORDS
-        # Extract all words (features) found in the Job Description
-        desc_keywords = vectorizer.get_feature_names_out()
-        # Get the frequency/score of these words in the CV
-        cv_array = cv_vectors.toarray()[0]
-
-        # Create a DataFrame to compare JD keywords vs CV content
-        df = pd.DataFrame({
-            "Keywords": desc_keywords,
-            "score": cv_array
-        })
-        
-        # Filter: Find keywords that exist in JD but have a score of 0 in the CV
-        df_missing = df[df["score"] == 0]["Keywords"]
-
-        # 6. DISPLAY RECOMMENDATIONS
-        if not df_missing.empty:
-            with st.expander("👀 View Missing Keywords"):
-                # Display the list of missing words without the score column (cleaner UI)
-                st.dataframe(
-                    df_missing,   
-                    use_container_width=True, 
-                    hide_index=True
-                )
-        else:
-            # Case where user has all keywords
-            st.info("🎉 **Perfect Match:** No missing keywords detected based on the Job Description.")
             
     except Exception as e:
         error_msg = str(e).lower()
@@ -286,39 +306,6 @@ elif st.session_state.cv_text and job_description \
         else:
             st.error("⚠️ **Low Relevance:** The CV content does not strongly align with the job context.")
 
-        # 4. HYBRID ANALYSIS (TF-IDF FOR KEYWORDS)
-        # Even in AI mode, we run TF-IDF purely to find specific missing keywords for the user.
-        # This gives the user the "Best of Both Worlds" (Context Score + Keyword Advice).
-        vectorizer = TfidfVectorizer(stop_words='english')
-        vectorizer.fit([job_description])
-        cv_vectors = vectorizer.transform([st.session_state.cv_text])
-
-        # Extract features and scores
-        desc_keywords = vectorizer.get_feature_names_out()
-        cv_array = cv_vectors.toarray()[0]
-
-        # Create DataFrame for analysis
-        df = pd.DataFrame({
-            "Keywords": desc_keywords,
-            "score": cv_array
-        })
-        
-        # Filter for words present in JD but missing in CV (score == 0)
-        df_missing = df[df["score"] == 0]["Keywords"]
-
-        # 5. DISPLAY MISSING KEYWORDS
-        if not df_missing.empty:
-            with st.expander("👀 View Missing Keywords (Hybrid Analysis)"):
-                # Warning: Explains that while AI understands context, specific keywords help with strict ATS.
-                st.warning("Tip: Although the AI understands your context, adding these specific keywords can help you pass strict ATS filters:")
-                st.dataframe(
-                    df_missing,   
-                    use_container_width=True, 
-                    hide_index=True
-                )
-        else:
-            st.info("🎉 **Excellent Coverage:** All key terms from the job description are present.")
-            
     except Exception as e:
         error_msg = str(e).lower()
         answer = "" # Placeholder for the error message
@@ -344,3 +331,74 @@ elif st.session_state.cv_text and job_description \
 
         # Display the specific error message to the user
         st.error(answer)
+
+if st.session_state.cv_text and job_description \
+    and st.session_state.info:
+
+    # 1. HYBRID ANALYSIS (TF-IDF FOR KEYWORDS)
+    # We run TF-IDF to find specific missing keywords.
+    # This acts as a "spell checker" for ATS optimization.
+    vectorizer = TfidfVectorizer(stop_words='english')
+    jb_vectors = vectorizer.fit_transform([job_description])
+    cv_vectors = vectorizer.transform([st.session_state.cv_text])
+
+    # Extract features (words) and their calculated importance scores
+    desc_keywords = vectorizer.get_feature_names_out()
+    jb_array = jb_vectors.toarray()[0]
+    cv_array = cv_vectors.toarray()[0]
+
+    # Create a DataFrame to compare JD importance vs CV presence
+    df_jd = pd.DataFrame({
+        "Keywords": desc_keywords,
+        "jd_score": jb_array,  # How important the word is in the Job Desc
+        "cv_score": cv_array   # Whether the word exists in the CV (0 = missing)
+    })
+    
+    # Filter: Identify words present in JD but missing in CV
+    df_missing = df_jd[df_jd["cv_score"] == 0]["Keywords"]
+
+    # 2. DISPLAY ALL MISSING KEYWORDS (General List)
+    if not df_missing.empty:
+        with st.expander("👀 View All Missing Keywords"):
+            st.warning("Tip: These words appear in the job description but were not found in your resume. Consider adding them where relevant.")
+            st.dataframe(
+                df_missing,   
+                use_container_width=True, 
+                hide_index=True
+            )
+    else:
+        st.info("🎉 **Excellent Coverage:** Your resume contains all the keywords found in the Job Description.")
+        
+    
+    # 3. PRIORITY ANALYSIS (Main Requirements)
+    # Sort keywords by 'jd_score'. High score = Word appears frequently in Job Desc = Critical Skill.
+    df_jd_sorted = df_jd.sort_values(by="jd_score", ascending=False)
+    requirements_keywords = df_jd_sorted["Keywords"].to_list()
+
+    st.markdown("### 🎯 Critical Skills Check")
+    st.caption("The system has auto-detected the most important words based on the Job Description. You can adjust this list.")
+
+    # Allow user to verify specific top skills
+    main_requirements = st.multiselect(
+        "Top Priority Keywords (Auto-detected)",
+        options = requirements_keywords,
+        # Default: Select the top 5 most important words automatically
+        default = requirements_keywords[:5] if len(requirements_keywords) > 5 else requirements_keywords,
+        help="Select the key skills you believe are most critical for this role to check if you have them.",
+    )
+
+    # 4. CRITICAL MISSING CHECK
+    if main_requirements:
+        # Check intersection: Which selected 'Main Requirements' are also in the 'Missing' list?
+        critical_missing = set(main_requirements).intersection(set(df_missing.to_list()))
+
+        if len(critical_missing) > 0 :
+            # WARNING: User is missing high-priority skills
+            st.error("⚠️ **High Risk of Rejection:** Critical Keywords Missing!")
+            
+            # Create a clean string list of missing words
+            missing_str = ", ".join([f"**{word}**" for word in critical_missing])
+            st.warning(f"Your resume is missing these top-priority terms: {missing_str}.\n\n**Action Required:** Ensure these keywords are included in your resume to pass the ATS filter.")
+        else:
+            # SUCCESS: User has all the high-priority skills
+            st.success("✅ **Strong Alignment:** Your resume contains all the selected critical keywords.")
