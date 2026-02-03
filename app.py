@@ -45,9 +45,9 @@ with st.sidebar:
     
     # Technical Badge (Fills space professionally)
     st.info(
-        "**Powered by:**\n"
-        "⚡ `TF-IDF Vectorizer` (Scikit-Learn)\n"
-        "🧠 `MiniLM-L6-v2` (SBERT)"
+        """**Powered by:**  
+        - ⚡ `TF-IDF Vectorizer` (Scikit-Learn)  
+        - 🧠 `MiniLM-L6-v2` (SBERT)"""
     )
 
     st.divider()
