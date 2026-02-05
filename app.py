@@ -5,7 +5,7 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 from sentence_transformers import util
 # Import custom helper functions to keep the main code clean
-from function import init_state, clear_cv, clean_text, load_mode
+from function import init_state, clear_cv, clean_text, load_model
 
 # --- INITIALIZATION ---
 # Initialize session state variables (like 'cv_text' and 'info') to prevent KeyErrors on startup
