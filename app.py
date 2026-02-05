@@ -428,12 +428,9 @@ if st.session_state.cv_text and job_description \
 
     # 4. CRITICAL MISSING CHECK
     if main_requirements:
-        # Verify availability by checking substrings in the raw CV text.
-        # This is required to support Custom Keywords and handle punctuation correctly.
-        critical_missing = []
-        for word in main_requirements:
-            if word.lower() not in st.session_state.cv_text.lower():
-                critical_missing.append(word)
+        # # Verify availability by checking substrings in the raw CV text.
+        # # This is required to support Custom Keywords and handle punctuation correctly.
+        critical_missing = [word for word in main_requirements if word.lower() not in st.session_state.cv_text.lower()]
 
         if len(critical_missing) > 0 :
             # WARNING: User is missing high-priority skills
