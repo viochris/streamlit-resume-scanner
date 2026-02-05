@@ -5,7 +5,7 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 from sentence_transformers import util
 # Import custom helper functions to keep the main code clean
-from function import init_state, clear_cv, load_model
+from function import init_state, clear_cv, clean_text, load_mode
 
 # --- INITIALIZATION ---
 # Initialize session state variables (like 'cv_text' and 'info') to prevent KeyErrors on startup
@@ -251,6 +251,16 @@ elif uploaded_cv or job_description:
     elif not uploaded_cv and job_description:
         st.warning("⚠️ **Incomplete Input:** You have pasted the **Job Description**, but the **Resume (PDF)** is missing.")
 
+# GLOBAL CLEANING PHASE
+# Although this step is technically not strictly required in Streamlit (since the data is held 
+# directly in memory and does not suffer from JSON serialization issues like the API), 
+# i apply it here as a safety measure (precaution).
+# This ensures that both the Resume and Job Description are standardized into a clean, 
+# single-line format to maximize the accuracy of the AI and TF-IDF models.
+if st.session_state.cv_text and job_description:
+    st.session_state.cv_text = clean_text(st.session_state.cv_text)
+    job_description = clean_text(job_description)
+
 # --- LOGIC: STRICT MODE (TF-IDF ANALYSIS) ---
 # Executes when both inputs are present AND 'Strict' mode is selected
 if st.session_state.cv_text and job_description \
@@ -367,18 +377,18 @@ if st.session_state.cv_text and job_description \
     # We run TF-IDF to find specific missing keywords.
     # This acts as a "spell checker" for ATS optimization.
     vectorizer = TfidfVectorizer(stop_words='english')
-    jb_vectors = vectorizer.fit_transform([job_description])
+    jd_vectors = vectorizer.fit_transform([job_description])
     cv_vectors = vectorizer.transform([st.session_state.cv_text])
 
     # Extract features (words) and their calculated importance scores
     desc_keywords = vectorizer.get_feature_names_out()
-    jb_array = jb_vectors.toarray()[0]
+    jd_array = jd_vectors.toarray()[0]
     cv_array = cv_vectors.toarray()[0]
 
     # Create a DataFrame to compare JD importance vs CV presence
     df_jd = pd.DataFrame({
         "Keywords": desc_keywords,
-        "jd_score": jb_array,  # How important the word is in the Job Desc
+        "jd_score": jd_array,  # How important the word is in the Job Desc
         "cv_score": cv_array   # Whether the word exists in the CV (0 = missing)
     })
     
@@ -412,13 +422,18 @@ if st.session_state.cv_text and job_description \
         options = requirements_keywords,
         # Default: Select the top 5 most important words automatically
         default = requirements_keywords[:5] if len(requirements_keywords) > 5 else requirements_keywords,
+        accept_new_options=True,
         help="Select the key skills you believe are most critical for this role to check if you have them.",
     )
 
     # 4. CRITICAL MISSING CHECK
     if main_requirements:
-        # Check intersection: Which selected 'Main Requirements' are also in the 'Missing' list?
-        critical_missing = set(main_requirements).intersection(set(df_missing.to_list()))
+        # Verify availability by checking substrings in the raw CV text.
+        # This is required to support Custom Keywords and handle punctuation correctly.
+        critical_missing = []
+        for word in main_requirements:
+            if word.lower() not in st.session_state.cv_text.lower():
+                critical_missing.append(word)
 
         if len(critical_missing) > 0 :
             # WARNING: User is missing high-priority skills

@@ -29,6 +29,23 @@ def clear_cv():
     # Clear the extracted CV text
     st.session_state.cv_text = ""
 
+def clean_text(text: str):
+    """
+    Preprocesses text to ensure continuous sentences for AI/NLP models.
+    Removes artifacts from PDF extraction and JSON formatting.
+    """
+    # 1. Handle escaped newlines (common in JSON/API raw inputs)
+    text = text.replace("\\n", " ")
+    
+    # 2. Replace actual newlines with spaces
+    # Prevents words from sticking together or breaking context (e.g., "AI\nEngineer" -> "AI Engineer")
+    text = text.replace("\n", " ")
+    
+    # 3. Collapse multiple whitespaces into a single space & trim edges
+    text = re.sub(r"\s+", " ", text).strip()
+
+    return text 
+
 @st.cache_resource
 def load_model():
     """
